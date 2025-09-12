@@ -1,0 +1,482 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1.0,maximum-scale=1.0,user-scalable=no" />
+<title>MyHotel — Admin</title>
+
+<link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css" rel="stylesheet">
+<link rel="manifest" href="manifest.json">
+<meta name="theme-color" content="#A38B7B">
+<!-- Supabase JS SDK -->
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+      <!-- fiarbase -->
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-messaging-compat.js"></script>
+
+
+
+<style>
+  :root{
+    --primary:#A38B7B;
+    --secondary:#D4C1AE;
+    --accent:#F2E7D5;
+    --text:#3A3330;
+    --highlight:#8B6D5F;
+    --maxw:420px;
+  }
+  *{box-sizing:border-box;font-family:system-ui,-apple-system,Segoe UI,Roboto,"Helvetica Neue",Arial;}
+  body{margin:0;background:linear-gradient(180deg,var(--accent),#fff);color:var(--text);min-height:100vh}
+  .wrap{max-width:var(--maxw);margin:0 auto;padding-bottom:80px}
+  header{background:var(--primary);color:var(--accent);padding:12px;border-bottom-left-radius:18px;border-bottom-right-radius:18px;display:flex;justify-content:space-between;align-items:center}
+  header h1{margin:0;font-size:16px}
+  .card{background:#fff;border-radius:12px;padding:12px;margin:12px 12px 6px 12px;box-shadow:0 6px 14px rgba(58,51,48,0.06)}
+  .muted{color:rgba(58,51,48,0.6);font-size:13px}
+  .nav{position:fixed;left:50%;transform:translateX(-50%);bottom:14px;width:calc(var(--maxw) - 24px);display:flex;justify-content:space-between;background:linear-gradient(90deg,var(--secondary),#fff);padding:8px;border-radius:18px;box-shadow:0 8px 22px rgba(0,0,0,0.08)}
+  .nav button{flex:1;border:none;background:transparent;padding:8px;border-radius:12px;font-size:13px;display:flex;flex-direction:column;align-items:center;gap:6px;color:var(--text)}
+  .nav button.active{background:linear-gradient(180deg,var(--primary),var(--highlight));color:var(--accent);box-shadow:0 6px 16px rgba(163,139,123,0.18)}
+  input,textarea,select{width:100%;padding:10px;border-radius:10px;border:1px solid rgba(58,51,48,0.08);margin-top:8px}
+  .small{font-size:13px}
+  .btn{background:var(--highlight);color:var(--accent);padding:10px;border:none;border-radius:10px;font-weight:700}
+  .row{display:flex;gap:8px;align-items:center}
+  .list-item{display:flex;justify-content:space-between;gap:8px;padding:8px;border-bottom:1px dashed rgba(58,51,48,0.06)}
+  .img-thumb{width:64px;height:48px;object-fit:cover;border-radius:6px}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <h1>MyHotel Admin</h1>
+    <div id="adminStatus" class="muted small">Please login</div>
+  </header>
+
+  <main id="mainArea">
+    <!-- Login card -->
+    <div class="card" id="loginCard">
+      <div style="font-weight:800">Admin login</div>
+      <div class="muted small">Use your admin credentials to access orders & product management</div>
+      <input id="adminEmail" placeholder="Email" />
+      <input id="adminPassword" placeholder="Password" type="password" />
+      <div style="margin-top:8px">
+        <button id="loginBtn" class="btn">Sign in</button>
+      </div>
+    </div>
+
+    <!-- Orders view -->
+    <div id="ordersView" style="display:none">
+      <div class="card">
+        <div style="font-weight:800">Orders</div>
+        <div class="muted small">All orders placed from the customer app</div>
+      </div>
+      <div id="ordersList" class="card"></div>
+    </div>
+
+    <!-- Work (manage categories & products) -->
+    <div id="workView" style="display:none">
+      <div class="card">
+        <div style="font-weight:800">Add Category</div>
+        <input id="catName" placeholder="Category name" />
+        <div style="margin-top:8px"><button id="addCatBtn" class="btn">Add category</button></div>
+      </div>
+
+      <div class="card">
+        <div style="font-weight:800">Add Product</div>
+        <input id="prodName" placeholder="Product name" />
+        <textarea id="prodDesc" placeholder="Description (ingredients, style)"></textarea>
+        <input id="imgUrl" placeholder="Image URL (or leave blank to upload from phone)" />
+        <div style="margin-top:8px">
+          <label class="muted small">Upload image from device</label>
+          <input id="imgFile" type="file" accept="image/*" />
+        </div>
+        <div style="display:flex;gap:8px;margin-top:8px">
+          <input id="priceFull" placeholder="Full price (₹)" />
+          <input id="priceHalf" placeholder="Half price (₹)" />
+        </div>
+        <select id="selectCat"></select>
+        <div style="margin-top:8px">
+          <div style="font-weight:700">Extras (e.g. Extra cheese)</div>
+          <div class="muted small">Add extras with price</div>
+          <input id="extraName" placeholder="Extra name" />
+          <input id="extraPrice" placeholder="Extra price (₹)" />
+          <div style="margin-top:8px"><button id="addExtraBtn" class="btn">Add extra to product (temp)</button></div>
+          <div id="extrasList" style="margin-top:8px"></div>
+        </div>
+
+        <div style="margin-top:12px">
+          <button id="createProdBtn" class="btn">Create Product</button>
+        </div>
+      </div>
+
+      <div class="card">
+        <div style="font-weight:800">Existing categories</div>
+        <div id="catsList"></div>
+      </div>
+
+      <div class="card">
+        <div style="font-weight:800">Existing products</div>
+        <div id="prodsList"></div>
+      </div>
+    </div>
+  </main>
+
+  <div class="nav" id="navBar" style="display:none">
+    <button id="navOrders"><i class="fa fa-list"></i><span>Orders</span></button>
+    <button id="navWork"><i class="fa fa-box-open"></i><span>Work</span></button>
+  </div>
+</div>
+
+<script>
+/* ---------- Supabase init (as requested) ---------- */
+
+  
+ // Service Worker registration
+    if ("serviceWorker" in navigator) {
+      navigator.serviceWorker
+        .register("/firebase-messaging-sw.js")
+        .then((reg) => {
+          console.log("Service Worker registered:", reg);
+        })
+        .catch((err) => {
+          console.error("Service Worker registration failed:", err);
+        });
+    }
+
+    // Firebase config
+    const firebaseConfig = {
+      apiKey: "AIzaSyB4qTKGGEIZrWFM5fwvMnTsrldFRvkqYN4",
+      authDomain: "hotal-559d4.firebaseapp.com",
+      projectId: "hotal-559d4",
+      storageBucket: "hotal-559d4.firebasestorage.app",
+      messagingSenderId: "448634988668",
+      appId: "1:448634988668:web:197242fd4811e7284c01f9"
+    };
+
+    // Firebase init
+    firebase.initializeApp(firebaseConfig);
+
+    // Supabase init
+    const supabaseUrl = "https://vaxelepziqqpteyqokrc.supabase.co";
+    const supabaseKey = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InZheGVsZXB6aXFxcHRleXFva3JjIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc1NDAxNDc0NywiZXhwIjoyMDY5NTkwNzQ3fQ.iyfvEjgfbntxCamr-NEFmZTwDYB9GIEJMwCas-fjuB8";
+    const db = supabase.createClient(supabaseUrl, supabaseKey);
+
+    let messaging;
+    try {
+      messaging = firebase.messaging();
+
+      Notification.requestPermission().then(function(permission) {
+        if (permission === "granted") {
+          messaging.getToken({
+            vapidKey: "BFsErA43EnYiZDaGWnS5mUsDRv0fjX1SAmqOdb32_UKYtZYkhA73VTLlo20_Imn9PAY498w-yZr3GwBO9SnuKwg"
+          })
+          .then(async function(currentToken) {
+            if (currentToken) {
+              alert("Token generated: " + currentToken);
+              console.log("FCM Token:", currentToken);
+
+              // Supabase में token save करना
+              try {
+                const { data, error } = await db.from("fcm_tokens").insert([{ token: currentToken }]);
+                if (error) {
+                  console.error("Supabase insert failed:", error);
+                  alert("Supabase insert failed: " + error.message);
+                } else {
+                  console.log("Token saved to Supabase:", data);
+                  alert("Token saved to Supabase successfully");
+                }
+              } catch (dbErr) {
+                console.error("Supabase insert exception:", dbErr);
+                alert("Supabase insert exception: " + dbErr.message);
+              }
+            } else {
+              alert("Token generate नहीं हुआ");
+            }
+          })
+          .catch(function(err) {
+            alert("Token error: " + err.message);
+            console.log("Error getting token: ", err);
+          });
+        } else {
+          alert("Notification permission denied");
+        }
+      });
+
+    } catch (e) {
+      alert("Messaging supported नहीं है: " + e.message);
+    }
+
+    // Foreground notification listener (safe check)
+    if (messaging) {
+      messaging.onMessage(function(payload) {
+        console.log("Message received: ", payload);
+        alert("🔔 " + payload.notification.title + " - " + payload.notification.body);
+      });
+    }
+
+/* ---------- Admin client-side login (as requested) ---------- */
+const ADMIN_EMAIL = 'shikharyadav406@gmail.com';
+const ADMIN_PASSWORD = 'Shi@123';
+
+/* UI refs */
+const loginCard = document.getElementById('loginCard');
+const adminStatus = document.getElementById('adminStatus');
+const loginBtn = document.getElementById('loginBtn');
+const adminEmail = document.getElementById('adminEmail');
+const adminPassword = document.getElementById('adminPassword');
+
+const navBar = document.getElementById('navBar');
+const navOrders = document.getElementById('navOrders');
+const navWork = document.getElementById('navWork');
+
+const ordersView = document.getElementById('ordersView');
+const workView = document.getElementById('workView');
+
+const ordersList = document.getElementById('ordersList');
+const addCatBtn = document.getElementById('addCatBtn');
+const catName = document.getElementById('catName');
+const createProdBtn = document.getElementById('createProdBtn');
+const selectCat = document.getElementById('selectCat');
+const catsList = document.getElementById('catsList');
+const prodsList = document.getElementById('prodsList');
+const prodName = document.getElementById('prodName');
+const prodDesc = document.getElementById('prodDesc');
+const priceFull = document.getElementById('priceFull');
+const priceHalf = document.getElementById('priceHalf');
+const imgUrl = document.getElementById('imgUrl');
+const imgFile = document.getElementById('imgFile');
+const extraName = document.getElementById('extraName');
+const extraPrice = document.getElementById('extraPrice');
+const addExtraBtn = document.getElementById('addExtraBtn');
+const extrasList = document.getElementById('extrasList');
+
+/* state */
+let tempExtras = []; // local extras for new product
+let CATEGORIES = [];
+let PRODUCTS = [];
+let ORDERS = [];
+
+/* ---------- login ---------- */
+loginBtn.addEventListener('click', ()=>{
+  const e = adminEmail.value.trim();
+  const p = adminPassword.value;
+  if(e===ADMIN_EMAIL && p===ADMIN_PASSWORD){
+    // success
+    adminStatus.textContent = 'Signed in as admin';
+    loginCard.style.display = 'none';
+    navBar.style.display = 'flex';
+    ordersView.style.display = 'block';
+    workView.style.display = 'none';
+    showNav('orders');
+    loadAll();
+  } else {
+    alert('Invalid admin credentials');
+  }
+});
+
+navOrders.addEventListener('click', ()=> showNav('orders'));
+navWork.addEventListener('click', ()=> showNav('work'));
+
+function showNav(n){
+  navOrders.classList.remove('active'); navWork.classList.remove('active');
+  ordersView.style.display = 'none'; workView.style.display = 'none';
+  if(n==='orders'){ navOrders.classList.add('active'); ordersView.style.display='block'; }
+  if(n==='work'){ navWork.classList.add('active'); workView.style.display='block'; }
+}
+
+/* ---------- load data ---------- */
+async function loadAll(){
+  await loadCategories();
+  await loadProducts();
+  await loadOrders();
+}
+
+/* categories */
+async function loadCategories(){
+  const { data, error } = await db.from('categories').select('*').order('id',{ascending:true});
+  if(error) return console.error(error);
+  CATEGORIES = data || [];
+  renderCats();
+  populateCatSelect();
+}
+function renderCats(){
+  catsList.innerHTML = '';
+  CATEGORIES.forEach(c=>{
+    const div = document.createElement('div'); div.className='list-item';
+    div.innerHTML = `<div>${c.name}</div><div><button onclick="deleteCategory(${c.id})" style="padding:6px;border-radius:8px;border:1px solid rgba(58,51,48,0.06);background:#fff">Delete</button></div>`;
+    catsList.appendChild(div);
+  });
+}
+window.deleteCategory = async function(id){
+  if(!confirm('Delete category?')) return;
+  const { error } = await db.from('categories').delete().eq('id', id);
+  if(error) return alert('Failed to delete');
+  await loadCategories(); await loadProducts();
+}
+
+/* create category */
+addCatBtn.addEventListener('click', async ()=>{
+  const name = catName.value.trim();
+  if(!name) return alert('Enter name');
+  const { error } = await db.from('categories').insert([{ name }]);
+  if(error) return alert('Create failed');
+  catName.value='';
+  await loadCategories();
+});
+
+/* products */
+async function loadProducts(){
+  const { data, error } = await db.from('products').select('*, product_options(*)').order('id',{ascending:true});
+  if(error) return console.error(error);
+  PRODUCTS = data || [];
+  renderProducts();
+}
+function renderProducts(){
+  prodsList.innerHTML = '';
+  PRODUCTS.forEach(p=>{
+    const div = document.createElement('div'); div.className='list-item';
+    div.innerHTML = `
+      <div style="display:flex;gap:8px;align-items:center">
+        <img src="${p.image_url || 'https://via.placeholder.com/300x200?text=Food'}" class="img-thumb" />
+        <div>
+          <div style="font-weight:700">${p.name}</div>
+          <div class="muted small">${truncate(p.description||'',60)}</div>
+          <div class="small muted">Full: ₹${p.price_full || 0} • Half: ₹${p.price_half || 0}</div>
+          <div class="small">Extras: ${(p.product_options||[]).map(x=>x.name+':₹'+x.price).join(', ') || '—'}</div>
+        </div>
+      </div>
+      <div>
+        <button onclick="deleteProduct(${p.id})" style="padding:6px;border-radius:8px;border:1px solid rgba(58,51,48,0.06);background:#fff">Delete</button>
+      </div>`;
+    prodsList.appendChild(div);
+  });
+}
+window.deleteProduct = async function(id){
+  if(!confirm('Delete product?')) return;
+  const { error } = await db.from('products').delete().eq('id', id);
+  if(error) return alert('Delete failed');
+  await loadProducts();
+}
+
+/* create product */
+addExtraBtn.addEventListener('click', ()=>{
+  const name = extraName.value.trim(); const price = Number(extraPrice.value||0);
+  if(!name) return alert('Enter extra name');
+  tempExtras.push({ name, price });
+  extraName.value=''; extraPrice.value='';
+  renderTempExtras();
+});
+function renderTempExtras(){
+  extrasList.innerHTML = '';
+  tempExtras.forEach((ex, idx)=>{
+    const d = document.createElement('div'); d.className='list-item';
+    d.innerHTML = `<div>${ex.name} — ₹${ex.price}</div><div><button onclick="removeTemp(${idx})">Remove</button></div>`;
+    extrasList.appendChild(d);
+  });
+}
+window.removeTemp = function(i){ tempExtras.splice(i,1); renderTempExtras(); };
+
+createProdBtn.addEventListener('click', async ()=>{
+  const name = prodName.value.trim(); if(!name) return alert('Enter product name');
+  const desc = prodDesc.value.trim();
+  const catId = Number(selectCat.value || 0); if(!catId) return alert('Select category');
+  const pFull = Number(priceFull.value||0); const pHalf = Number(priceHalf.value||0);
+  let image_url = imgUrl.value.trim();
+  // if file provided, upload to supabase storage
+  if(!image_url && imgFile.files && imgFile.files[0]){
+    // ensure you have a bucket named 'product-images' in Supabase storage
+    const file = imgFile.files[0];
+    const fname = `prod_${Date.now()}_${file.name.replace(/\s+/g,'_')}`;
+    const { data, error: upErr } = await db.storage.from('product-images').upload(fname, file, { cacheControl: '3600', upsert: false });
+    if(upErr){ console.error(upErr); alert('Image upload failed — make sure bucket "product-images" exists'); return; }
+    // get public URL
+    // नया (सही)
+const { data: urlData } = db.storage.from('product-images').getPublicUrl(data.path);
+image_url = urlData.publicUrl;
+  }
+  // insert product
+  const { data: prodData, error: prodErr } = await db.from('products').insert([{
+    name, description: desc, image_url, category_id: catId, price_full: pFull, price_half: pHalf
+  }]).select().single();
+  if(prodErr){ console.error(prodErr); alert('Create product failed'); return; }
+  const prodId = prodData.id;
+  // insert extras (product_options)
+  for(const ex of tempExtras){
+    await db.from('product_options').insert([{ product_id: prodId, name: ex.name, price: ex.price }]);
+  }
+  // reset
+  prodName.value=''; prodDesc.value=''; imgUrl.value=''; priceFull.value=''; priceHalf.value=''; imgFile.value=''; tempExtras=[];
+  renderTempExtras();
+  await loadProducts();
+  alert('Product created');
+});
+
+/* populate category select */
+function populateCatSelect(){
+  selectCat.innerHTML = '<option value="">Select category</option>';
+  CATEGORIES.forEach(c=>{ const opt = document.createElement('option'); opt.value = c.id; opt.textContent = c.name; selectCat.appendChild(opt); });
+}
+
+/* orders */
+async function loadOrders(){
+  const { data, error } = await db.from('orders').select('*, order_items(*, order_item_options(*))').order('id',{ascending:false});
+  if(error) return console.error(error);
+  ORDERS = data || [];
+  renderOrders();
+}
+function renderOrders(){
+  ordersList.innerHTML = '';
+  if(ORDERS.length===0) ordersList.innerHTML = '<div class="muted small">No orders yet</div>';
+  ORDERS.forEach(o=>{
+    const div = document.createElement('div'); div.className='card';
+    div.innerHTML = `
+      <div style="display:flex;justify-content:space-between;align-items:center">
+        <div>
+          <div style="font-weight:800">#${o.id} — ${o.customer_name}</div>
+          <div class="muted small">${new Date(o.created_at).toLocaleString()}</div>
+          <div class="small">Total: ₹${o.total_amount} • Status: ${o.status}</div>
+        </div>
+        <div>
+          <button onclick="deleteOrder(${o.id})" style="padding:8px;border-radius:8px;border:1px solid rgba(58,51,48,0.06);background:#fff">Delete</button>
+        </div>
+      </div>
+      <div style="margin-top:8px">
+        ${o.order_items.map(it=>`<div style="display:flex;gap:8px;padding:6px 0;border-top:1px dashed rgba(58,51,48,0.04)">
+          <img src="${it.image_url || 'https://via.placeholder.com/200'}" style="width:64px;height:48px;object-fit:cover;border-radius:6px"/>
+          <div style="flex:1">
+            <div style="font-weight:700">${it.product_name}</div>
+            <div class="muted small">Serving: ${it.serving} • Qty: ${it.qty}</div>
+            <div class="small">Unit: ₹${it.unit_price} • Total: ₹${it.total_price}</div>
+            <div class="small">Extras: ${ (it.order_item_options || []).map(x=>x.name+':₹'+x.price).join(', ') || '—' }</div>
+          </div>
+        </div>`).join('')}
+      </div>
+      <div style="margin-top:8px"><div class="muted small">Note: ${o.note || '—'}</div></div>
+    `;
+    ordersList.appendChild(div);
+  });
+}
+
+/* delete order */
+window.deleteOrder = async function(id){
+  if(!confirm('Delete order permanently?')) return;
+  // delete child entries first or rely on rpc/foreign cascade; we'll delete manually
+  const { data: items } = await db.from('order_items').select('*').eq('order_id', id);
+  for(const it of (items||[])){
+    await db.from('order_item_options').delete().eq('order_item_id', it.id);
+  }
+  await db.from('order_items').delete().eq('order_id', id);
+  await db.from('orders').delete().eq('id', id);
+  await loadOrders();
+}
+
+/* ---------- helpers ---------- */
+function truncate(s,n=80){ return (s||'').length>n ? s.slice(0,n-1)+'…' : s; }
+
+/* ---------- initial load when admin signs in ---------- */
+/* loadAll called after login success */
+
+/* Expose debug funcs */
+window._admin = { loadAll, loadOrders, loadProducts, loadCategories };
+</script>
+
+</body>
+</html>
