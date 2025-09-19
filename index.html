@@ -255,22 +255,37 @@ let PRODUCTS = [];
 let ORDERS = [];
 
 /* ---------- login ---------- */
+/* ---------- login ---------- */
 loginBtn.addEventListener('click', ()=>{
   const e = adminEmail.value.trim();
   const p = adminPassword.value;
   if(e===ADMIN_EMAIL && p===ADMIN_PASSWORD){
     // success
-    adminStatus.textContent = 'Signed in as admin';
-    loginCard.style.display = 'none';
-    navBar.style.display = 'flex';
-    ordersView.style.display = 'block';
-    workView.style.display = 'none';
-    showNav('orders');
-    loadAll();
+    localStorage.setItem("isAdminLoggedIn", "true"); // लॉगिन स्टेटस सेव करो
+    showAdminUI();
   } else {
     alert('Invalid admin credentials');
   }
 });
+
+// पेज लोड होते ही चेक करो कि लॉगिन है या नहीं
+if(localStorage.getItem("isAdminLoggedIn") === "true"){
+  showAdminUI();
+}
+
+function showAdminUI(){
+  adminStatus.textContent = 'Signed in as admin';
+  loginCard.style.display = 'none';
+  navBar.style.display = 'flex';
+  showNav('orders');
+  loadAll();
+}
+
+// लॉगआउट बटन के लिए फंक्शन
+function logout(){
+  localStorage.removeItem("isAdminLoggedIn");
+  location.reload(); // दोबारा लॉगिन स्क्रीन दिख जाएगी
+}
 
 navOrders.addEventListener('click', ()=> showNav('orders'));
 navWork.addEventListener('click', ()=> showNav('work'));
