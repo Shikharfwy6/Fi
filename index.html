@@ -170,7 +170,7 @@
           })
           .then(async function(currentToken) {
             if (currentToken) {
-              alert("Token generated: " + currentToken);
+              //alert("Token generated: " + currentToken);
               console.log("FCM Token:", currentToken);
 
               // Supabase में token save करना
@@ -178,37 +178,37 @@
                 const { data, error } = await db.from("fcm_tokens").insert([{ token: currentToken }]);
                 if (error) {
                   console.error("Supabase insert failed:", error);
-                  alert("Supabase insert failed: " + error.message);
+                  //alert("Supabase insert failed: " + error.message);
                 } else {
                   console.log("Token saved to Supabase:", data);
-                  alert("Token saved to Supabase successfully");
+                  //alert("Token saved to Supabase successfully");
                 }
               } catch (dbErr) {
                 console.error("Supabase insert exception:", dbErr);
-                alert("Supabase insert exception: " + dbErr.message);
+               // alert("Supabase insert exception: " + dbErr.message);
               }
             } else {
-              alert("Token generate नहीं हुआ");
+             // alert("Token generate नहीं हुआ");
             }
           })
           .catch(function(err) {
-            alert("Token error: " + err.message);
+           // alert("Token error: " + err.message);
             console.log("Error getting token: ", err);
           });
         } else {
-          alert("Notification permission denied");
+         // alert("Notification permission denied");
         }
       });
 
     } catch (e) {
-      alert("Messaging supported नहीं है: " + e.message);
+      //alert("Messaging supported नहीं है: " + e.message);
     }
 
     // Foreground notification listener (safe check)
     if (messaging) {
       messaging.onMessage(function(payload) {
         console.log("Message received: ", payload);
-        alert("🔔 " + payload.notification.title + " - " + payload.notification.body);
+       // alert("🔔 " + payload.notification.title + " - " + payload.notification.body);
       });
     }
 
