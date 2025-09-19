@@ -127,7 +127,10 @@
 
 <script>
 /* ---------- Supabase init (as requested) ---------- */
-
+window.onpopstate = function(event) {
+   showNav('orders'); // जब भी back दबाओ Orders पेज दिखेगा
+   window.history.pushState({}, "");
+};
   
  // Service Worker registration
     if ("serviceWorker" in navigator) {
