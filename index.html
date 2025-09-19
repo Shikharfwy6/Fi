@@ -294,11 +294,34 @@ navOrders.addEventListener('click', ()=> showNav('orders'));
 navWork.addEventListener('click', ()=> showNav('work'));
 
 function showNav(n){
-  navOrders.classList.remove('active'); navWork.classList.remove('active');
-  ordersView.style.display = 'none'; workView.style.display = 'none';
-  if(n==='orders'){ navOrders.classList.add('active'); ordersView.style.display='block'; }
-  if(n==='work'){ navWork.classList.add('active'); workView.style.display='block'; }
+  navOrders.classList.remove('active'); 
+  navWork.classList.remove('active');
+  ordersView.style.display = 'none'; 
+  workView.style.display = 'none';
+
+  if(n==='orders'){ 
+    navOrders.classList.add('active'); 
+    ordersView.style.display='block'; 
+  }
+  if(n==='work'){ 
+    navWork.classList.add('active'); 
+    workView.style.display='block'; 
+  }
+
+  // history push
+  history.pushState({ view: n }, "", "");
 }
+
+// Back button handle
+window.onpopstate = function(event){
+  if(event.state && event.state.view){
+    showNav(event.state.view);
+  } else {
+    // अगर कोई state नहीं है तो डिफ़ॉल्ट orders दिखाओ
+    showNav('orders');
+  }
+};
+
 
 /* ---------- load data ---------- */
 async function loadAll(){
